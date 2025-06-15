@@ -1,12 +1,10 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
@@ -22,13 +20,11 @@ const Auth = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check for password reset flow
-    const urlParams = new URLSearchParams(window.location.search);
-    const accessToken = urlParams.get('access_token');
-    const refreshToken = urlParams.get('refresh_token');
-    const type = urlParams.get('type');
+    // Check for password reset flow. With Supabase v2, this information is in the URL hash.
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const type = params.get('type');
 
-    if (type === 'recovery' && accessToken && refreshToken) {
+    if (type === 'recovery') {
       // User is in password reset flow
       setIsUpdatePassword(true);
       setIsForgotPassword(false);
