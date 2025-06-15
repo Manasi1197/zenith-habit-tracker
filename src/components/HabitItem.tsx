@@ -12,7 +12,7 @@ interface HabitItemProps {
 }
 
 const HabitItem = ({ habit, onComplete, onDelete }: HabitItemProps) => {
-  const isCompletedToday = habit.lastCompletedDate === new Date().toISOString().split('T')[0];
+  const isCompletedToday = habit.last_completed_date === new Date().toISOString().split('T')[0];
 
   return (
     <div className="flex items-center gap-4 p-4 border-b last:border-b-0">
