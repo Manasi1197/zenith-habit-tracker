@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -6,9 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +26,7 @@ const Auth = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !password.trim()) {
+    if (!email.trim() || (!isForgotPassword && !password.trim())) {
       toast.error("Please fill in all fields");
       return;
     }
@@ -31,25 +34,38 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      const { error } = isLogin 
-        ? await signIn(email, password)
-        : await signUp(email, password);
+      if (isForgotPassword) {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/auth`,
+        });
 
-      if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password");
-        } else if (error.message.includes("User already registered")) {
-          toast.error("An account with this email already exists");
-        } else {
+        if (error) {
           toast.error(error.message);
+        } else {
+          toast.success("Password reset email sent! Check your inbox.");
+          setIsForgotPassword(false);
         }
       } else {
-        if (isLogin) {
-          toast.success("Welcome back!");
-          navigate("/");
+        const { error } = isLogin 
+          ? await signIn(email, password)
+          : await signUp(email, password);
+
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Invalid email or password");
+          } else if (error.message.includes("User already registered")) {
+            toast.error("An account with this email already exists");
+          } else {
+            toast.error(error.message);
+          }
         } else {
-          toast.success("Account created successfully! Welcome to Zenith Habit Tracker!");
-          navigate("/");
+          if (isLogin) {
+            toast.success("Welcome back!");
+            navigate("/");
+          } else {
+            toast.success("Account created successfully! Welcome to Zenith Habit Tracker!");
+            navigate("/");
+          }
         }
       }
     } catch (error) {
@@ -59,13 +75,24 @@ const Auth = () => {
     }
   };
 
+  const getTitle = () => {
+    if (isForgotPassword) return "Reset Password";
+    return isLogin ? "Sign in to your account" : "Create a new account";
+  };
+
+  const getButtonText = () => {
+    if (loading) return "Loading...";
+    if (isForgotPassword) return "Send Reset Email";
+    return isLogin ? "Sign In" : "Sign Up";
+  };
+
   return (
     <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Zenith Habit Tracker</CardTitle>
           <CardDescription>
-            {isLogin ? "Sign in to your account" : "Create a new account"}
+            {getTitle()}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,32 +106,55 @@ const Auth = () => {
                 required
               />
             </div>
-            <div>
-              <Input
-                type="password"
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+            {!isForgotPassword && (
+              <div>
+                <Input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
+            )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Loading..." : (isLogin ? "Sign In" : "Sign Up")}
+              {getButtonText()}
             </Button>
           </form>
           
-          <div className="mt-4 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
-              {isLogin 
-                ? "Don't have an account? Sign up" 
-                : "Already have an account? Sign in"
-              }
-            </button>
+          <div className="mt-4 text-center space-y-2">
+            {!isForgotPassword ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => setIsLogin(!isLogin)}
+                  className="text-sm text-muted-foreground hover:text-foreground block w-full"
+                >
+                  {isLogin 
+                    ? "Don't have an account? Sign up" 
+                    : "Already have an account? Sign in"
+                  }
+                </button>
+                {isLogin && (
+                  <button
+                    type="button"
+                    onClick={() => setIsForgotPassword(true)}
+                    className="text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    Forgot your password?
+                  </button>
+                )}
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsForgotPassword(false)}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                Back to sign in
+              </button>
+            )}
           </div>
         </CardContent>
       </Card>
