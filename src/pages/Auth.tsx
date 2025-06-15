@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -49,7 +48,8 @@ const Auth = () => {
           toast.success("Welcome back!");
           navigate("/");
         } else {
-          toast.success("Account created! Please check your email to verify your account.");
+          toast.success("Account created successfully! Welcome to Zenith Habit Tracker!");
+          navigate("/");
         }
       }
     } catch (error) {
